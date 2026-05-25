@@ -27,10 +27,57 @@ type EcommerceSession = {
 };
 
 type ExtractedOrder = Partial<Omit<EcommerceOrder, "proofReceived" | "catalogProductId">>;
+type EcommerceLanguage = "es" | "en";
 
 const globalForEcommerce = globalThis as unknown as {
   __ecommerceAssistantSessions?: Map<string, EcommerceSession>;
 };
+const ORDER_FIELD_ALIASES = [
+  "producto",
+  "product",
+  "equipo",
+  "celular",
+  "item",
+  "precio",
+  "price",
+  "valor",
+  "total",
+  "direccion",
+  "dirección",
+  "address",
+  "entrega",
+  "ciudad",
+  "city",
+  "cliente",
+  "nombre",
+  "customer",
+  "comprador",
+];
+
+function getEcommerceLanguage(): EcommerceLanguage {
+  const language = process.env.ECOMMERCE_LANGUAGE?.trim().toLowerCase();
+  return language === "en" ? "en" : "es";
+}
+
+function getFieldLabels(language = getEcommerceLanguage()) {
+  if (language === "en") {
+    return {
+      product: "product",
+      price: "price",
+      address: "address",
+      city: "city",
+      customerName: "customer name",
+    };
+  }
+
+  return {
+    product: "producto",
+    price: "precio",
+    address: "direccion",
+    city: "ciudad",
+    customerName: "nombre del cliente",
+  };
+}
 
 function createEmptyOrder(): EcommerceOrder {
   return {
@@ -104,8 +151,27 @@ function parsePrice(value: string | number | null | undefined) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function getLabeledValue(message: string, labels: string[]) {
   const normalizedLabels = labels.map(normalizeText);
+  const inlineMessage = message.replace(/\r?\n+/g, " ");
+  const nextLabelPattern = ORDER_FIELD_ALIASES.map(escapeRegex).join("|");
+
+  for (const label of labels) {
+    const pattern = new RegExp(
+      `(?:^|[\\s.;,])${escapeRegex(label)}\\s*:\\s*([\\s\\S]*?)(?=\\s*(?:${nextLabelPattern})\\s*:|$)`,
+      "iu",
+    );
+    const match = inlineMessage.match(pattern);
+    const value = match?.[1]?.trim().replace(/[.;,\s]+$/, "");
+
+    if (value) {
+      return value;
+    }
+  }
 
   for (const line of message.split(/\r?\n/)) {
     const [rawLabel, ...rest] = line.split(":");
@@ -138,7 +204,7 @@ function extractOrderLocally(message: string): ExtractedOrder {
   return {
     productName,
     productPrice: parsePrice(priceText),
-    address: getLabeledValue(message, ["direccion", "address", "entrega"]),
+    address: getLabeledValue(message, ["direccion", "dirección", "address", "entrega"]),
     city: getLabeledValue(message, ["ciudad", "city"]),
     customerName: getLabeledValue(message, ["cliente", "nombre", "customer", "comprador"]),
   };
@@ -173,6 +239,7 @@ async function extractOrderWithOpenAI(message: string): Promise<ExtractedOrder> 
     userPrompt: JSON.stringify({
       mensaje: message,
       catalogo: buildCatalogSummary(30),
+      assistantLanguage: getEcommerceLanguage(),
     }),
   });
 
@@ -234,40 +301,59 @@ function mergeOrder(session: EcommerceSession, extracted: ExtractedOrder) {
 }
 
 function getMissingFields(order: EcommerceOrder) {
+  const labels = getFieldLabels();
   const missing: string[] = [];
 
   if (!order.productName) {
-    missing.push("producto");
+    missing.push(labels.product);
   }
 
   if (!order.productPrice) {
-    missing.push("precio");
+    missing.push(labels.price);
   }
 
   if (!order.address) {
-    missing.push("direccion");
+    missing.push(labels.address);
   }
 
   if (!order.city) {
-    missing.push("ciudad");
+    missing.push(labels.city);
   }
 
   if (!order.customerName) {
-    missing.push("nombre del cliente");
+    missing.push(labels.customerName);
   }
 
   return missing;
 }
 
 function getPaymentInstructions() {
+  const customInstructions = process.env.PAYMENT_INSTRUCTIONS?.trim();
+
+  if (customInstructions) {
+    return customInstructions;
+  }
+
+  if (getEcommerceLanguage() === "en") {
+    return "To confirm your order, please complete the payment through the agreed method and send me the payment receipt here on WhatsApp.";
+  }
+
   return (
-    process.env.PAYMENT_INSTRUCTIONS?.trim() ||
     "Para confirmar el pedido, realiza el pago por el medio acordado y enviame el comprobante por este mismo WhatsApp."
   );
 }
 
 function formatOrderSummary(order: EcommerceOrder) {
   const price = formatPriceCOP(order.productPrice);
+
+  if (getEcommerceLanguage() === "en") {
+    return [
+      `Product: ${order.productName ?? "pending"}`,
+      `Total: ${price ?? "pending"}`,
+      `Delivery: ${order.address ?? "pending"}, ${order.city ?? "pending"}`,
+      `Customer: ${order.customerName ?? "pending"}`,
+    ].join("\n");
+  }
 
   return [
     `Producto: ${order.productName ?? "pendiente"}`,
@@ -280,6 +366,14 @@ function formatOrderSummary(order: EcommerceOrder) {
 function buildMissingFieldsReply(order: EcommerceOrder) {
   const missing = getMissingFields(order);
 
+  if (getEcommerceLanguage() === "en") {
+    return [
+      "Perfect, I can help with your purchase.",
+      `I still need: ${missing.join(", ")}.`,
+      "You can send it like this: Customer: your name, Address: your address, City: your city.",
+    ].join("\n");
+  }
+
   return [
     "Perfecto, te ayudo con la compra.",
     `Me falta este dato: ${missing.join(", ")}.`,
@@ -290,6 +384,14 @@ function buildMissingFieldsReply(order: EcommerceOrder) {
 function buildPaymentRequestReply(order: EcommerceOrder) {
   const customer = order.customerName ? `${order.customerName}, ` : "";
 
+  if (getEcommerceLanguage() === "en") {
+    return [
+      `Great, ${customer}I have your order:`,
+      formatOrderSummary(order),
+      getPaymentInstructions(),
+    ].join("\n\n");
+  }
+
   return [
     `Listo, ${customer}tengo tu pedido:`,
     formatOrderSummary(order),
@@ -298,6 +400,13 @@ function buildPaymentRequestReply(order: EcommerceOrder) {
 }
 
 function buildUnavailableReply(product: EcommerceProduct) {
+  if (getEcommerceLanguage() === "en") {
+    return [
+      `${product.name} is not available in inventory right now.`,
+      "Send me another product and I can help you with the order.",
+    ].join("\n");
+  }
+
   return [
     `Por ahora ${product.name} no aparece disponible en inventario.`,
     "Si quieres, enviame otro producto y reviso la compra.",
@@ -308,6 +417,10 @@ function buildCatalogReply() {
   const products = buildCatalogSummary(8);
 
   if (!products.length) {
+    if (getEcommerceLanguage() === "en") {
+      return "I do not have products loaded in productos.json yet. Send me the product you want to buy and I will help with the order.";
+    }
+
     return "Aun no tengo productos cargados en productos.json. Enviame el producto que quieres comprar y te ayudo con el pedido.";
   }
 
@@ -316,10 +429,22 @@ function buildCatalogReply() {
     return `${product.nombre}${price ? ` - ${price}` : ""}`;
   });
 
-  return ["Estos son algunos productos disponibles:", ...lines].join("\n");
+  return [
+    getEcommerceLanguage() === "en"
+      ? "These are some available products:"
+      : "Estos son algunos productos disponibles:",
+    ...lines,
+  ].join("\n");
 }
 
 function buildFallbackReply() {
+  if (getEcommerceLanguage() === "en") {
+    return [
+      "Hi, I can help you with your WhatsApp purchase.",
+      "Send me the order with Product, Price, Address, City, and Customer. Once I have it, I will ask for the payment receipt.",
+    ].join("\n");
+  }
+
   return [
     "Hola, te ayudo con tu compra por WhatsApp.",
     "Enviame el pedido con Producto, Precio, Direccion, Ciudad y Cliente. Cuando lo tenga, te pedire el comprobante de pago.",
@@ -329,6 +454,8 @@ function buildFallbackReply() {
 function hasCatalogIntent(message: string) {
   const normalized = normalizeText(message);
   return ["catalogo", "productos", "inventario", "precio", "precios"].some((word) =>
+    normalized.includes(word),
+  ) || ["catalog", "products", "inventory", "price", "prices"].some((word) =>
     normalized.includes(word),
   );
 }
@@ -344,6 +471,14 @@ function hasPaymentProofIntent(message: string) {
     "ya pague",
     "transferencia",
     "pago hecho",
+    "payment receipt",
+    "receipt",
+    "proof",
+    "proof of payment",
+    "paid",
+    "i paid",
+    "payment sent",
+    "transfer",
   ].some((word) => normalized.includes(word));
 }
 
@@ -368,14 +503,23 @@ export function resetEcommerceConversation(sessionId: string) {
 export async function registerEcommercePaymentProof(sessionId: string) {
   const session = getSession(sessionId);
   session.order.proofReceived = true;
+  const language = getEcommerceLanguage();
 
   const reply = session.order.productName
-    ? [
-        "Gracias, recibi el comprobante de pago.",
-        "Vamos a verificarlo y te confirmamos el estado del pedido por este mismo WhatsApp.",
-        formatOrderSummary(session.order),
-      ].join("\n\n")
-    : "Gracias, recibi el comprobante. Ahora enviame el pedido para asociarlo correctamente.";
+    ? language === "en"
+      ? [
+          "Thank you, I received the payment receipt.",
+          "We will verify it and confirm the order status here on WhatsApp.",
+          formatOrderSummary(session.order),
+        ].join("\n\n")
+      : [
+          "Gracias, recibi el comprobante de pago.",
+          "Vamos a verificarlo y te confirmamos el estado del pedido por este mismo WhatsApp.",
+          formatOrderSummary(session.order),
+        ].join("\n\n")
+    : language === "en"
+      ? "Thank you, I received the receipt. Now send me the order so I can match it correctly."
+      : "Gracias, recibi el comprobante. Ahora enviame el pedido para asociarlo correctamente.";
 
   addTurn(session, "assistant", reply);
 
@@ -393,13 +537,22 @@ export async function chatWithEcommerceAssistant(sessionId: string, message: str
 
   if (hasPaymentProofIntent(trimmedMessage)) {
     session.order.proofReceived = true;
+    const language = getEcommerceLanguage();
     const reply = session.order.productName
-      ? [
-          "Gracias, recibi el comprobante de pago.",
-          "Vamos a verificarlo y te confirmamos el estado del pedido por este mismo WhatsApp.",
-          formatOrderSummary(session.order),
-        ].join("\n\n")
-      : "Gracias, recibi el comprobante. Ahora enviame el pedido para asociarlo correctamente.";
+      ? language === "en"
+        ? [
+            "Thank you, I received the payment receipt.",
+            "We will verify it and confirm the order status here on WhatsApp.",
+            formatOrderSummary(session.order),
+          ].join("\n\n")
+        : [
+            "Gracias, recibi el comprobante de pago.",
+            "Vamos a verificarlo y te confirmamos el estado del pedido por este mismo WhatsApp.",
+            formatOrderSummary(session.order),
+          ].join("\n\n")
+      : language === "en"
+        ? "Thank you, I received the receipt. Now send me the order so I can match it correctly."
+        : "Gracias, recibi el comprobante. Ahora enviame el pedido para asociarlo correctamente.";
 
     addTurn(session, "assistant", reply);
 
@@ -454,7 +607,10 @@ export async function chatWithEcommerceAssistant(sessionId: string, message: str
   } else if (getMissingFields(session.order).length) {
     reply = buildMissingFieldsReply(session.order);
   } else if (session.order.proofReceived) {
-    reply = "Ya tengo tu comprobante. Estamos verificando el pago y te confirmamos el pedido por este WhatsApp.";
+    reply =
+      getEcommerceLanguage() === "en"
+        ? "I already have your receipt. We are verifying the payment and will confirm the order here on WhatsApp."
+        : "Ya tengo tu comprobante. Estamos verificando el pago y te confirmamos el pedido por este WhatsApp.";
   } else {
     reply = buildPaymentRequestReply(session.order);
   }

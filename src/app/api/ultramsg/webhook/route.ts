@@ -74,6 +74,10 @@ function isWhatsAppSafeMode() {
   return process.env.WHATSAPP_SAFE_MODE?.trim().toLowerCase() === "true";
 }
 
+function getAudioTranscriptionLanguage() {
+  return process.env.ECOMMERCE_LANGUAGE?.trim().toLowerCase() === "en" ? "en" : "es";
+}
+
 function cleanupSafetyState(now = Date.now()) {
   const state = getSafeModeState();
 
@@ -671,7 +675,7 @@ export async function POST(request: Request) {
         audio: media.bytes,
         filename: media.filename,
         mimeType: media.mimeType,
-        language: "es",
+        language: getAudioTranscriptionLanguage(),
       });
 
       if (!transcription) {

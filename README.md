@@ -54,6 +54,7 @@ Copia `.env.example` a `.env` y completa:
 
 ```env
 ECOMMERCE_ONLY="true"
+ECOMMERCE_LANGUAGE="en"
 
 OPENAI_API_KEY="sk-..."
 OPENAI_MODEL="gpt-5-mini"
@@ -70,8 +71,9 @@ ELEVENLABS_API_KEY="..."
 ELEVENLABS_VOICE_ID="..."
 ELEVENLABS_MODEL_ID="eleven_multilingual_v2"
 ELEVENLABS_OUTPUT_FORMAT="mp3_44100_128"
+ELEVENLABS_LANGUAGE_CODE="en"
 
-PAYMENT_INSTRUCTIONS="Para confirmar el pedido, realiza el pago por el medio acordado y enviame el comprobante por este mismo WhatsApp."
+PAYMENT_INSTRUCTIONS="To confirm your order, please complete the payment through the agreed method and send me the payment receipt here on WhatsApp."
 PRODUCTS_JSON_PATH="productos.json"
 ```
 

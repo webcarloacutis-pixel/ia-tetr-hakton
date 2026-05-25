@@ -4,6 +4,8 @@ const ELEVENLABS_MODEL_ID =
   process.env.ELEVENLABS_MODEL_ID?.trim() || "eleven_multilingual_v2";
 const ELEVENLABS_OUTPUT_FORMAT =
   process.env.ELEVENLABS_OUTPUT_FORMAT?.trim() || "mp3_44100_128";
+const ELEVENLABS_LANGUAGE_CODE =
+  process.env.ELEVENLABS_LANGUAGE_CODE?.trim() || "es";
 
 function getAudioMimeType(outputFormat: string) {
   if (outputFormat.startsWith("mp3_")) {
@@ -32,6 +34,7 @@ export function getElevenLabsConfigStatus() {
     missingVoiceId: !ELEVENLABS_VOICE_ID,
     modelId: ELEVENLABS_MODEL_ID,
     outputFormat: ELEVENLABS_OUTPUT_FORMAT,
+    languageCode: ELEVENLABS_LANGUAGE_CODE,
   };
 }
 
@@ -56,7 +59,7 @@ export async function generateElevenLabsSpeech(text: string) {
     body: JSON.stringify({
       text,
       model_id: ELEVENLABS_MODEL_ID,
-      language_code: "es",
+      language_code: ELEVENLABS_LANGUAGE_CODE,
       voice_settings: {
         stability: 0.45,
         similarity_boost: 0.8,

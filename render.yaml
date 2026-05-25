@@ -12,6 +12,8 @@ services:
         value: 20
       - key: ECOMMERCE_ONLY
         value: "true"
+      - key: ECOMMERCE_LANGUAGE
+        value: en
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
@@ -38,6 +40,8 @@ services:
         value: eleven_multilingual_v2
       - key: ELEVENLABS_OUTPUT_FORMAT
         value: mp3_44100_128
+      - key: ELEVENLABS_LANGUAGE_CODE
+        value: en
       - key: PAYMENT_INSTRUCTIONS
         sync: false
       - key: PRODUCTS_JSON_PATH

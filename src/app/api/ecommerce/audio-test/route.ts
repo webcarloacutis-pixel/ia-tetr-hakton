@@ -30,6 +30,10 @@ function getAudioExtension(mimeType: string) {
   return "webm";
 }
 
+function getAudioTranscriptionLanguage() {
+  return process.env.ECOMMERCE_LANGUAGE?.trim().toLowerCase() === "en" ? "en" : "es";
+}
+
 export async function GET() {
   const elevenLabs = getElevenLabsConfigStatus();
 
@@ -78,7 +82,7 @@ export async function POST(request: Request) {
       audio: bytes,
       filename: audio.name || `audio-test.${getAudioExtension(mimeType)}`,
       mimeType,
-      language: "es",
+      language: getAudioTranscriptionLanguage(),
     });
 
     if (!transcription) {
