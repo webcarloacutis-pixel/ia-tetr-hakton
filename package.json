@@ -1,26 +1,16 @@
 {
-  "name": "rionegro-panel-alcaldia",
+  "name": "voicecart-ai",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:backend\"",
-    "dev:frontend": "next dev -p 3030",
-    "dev:backend": "tsx watch --env-file=.env src/server/scheduler.ts",
+    "dev": "npm run dev:ecommerce",
+    "dev:ecommerce": "next dev -p 3030",
     "build": "next build --webpack",
     "start": "npm run build && next start -p 3030",
-    "start:frontend": "npm run build && next start -p 3030",
-    "start:backend": "tsx --env-file=.env src/server/scheduler.ts",
     "render:start": "next start -p $PORT",
-    "render:worker": "tsx src/server/scheduler.ts",
     "lint": "eslint .",
-    "qa:assistant": "tsx --env-file=.env qa/assistant.qa.ts",
-    "db:start": "docker compose up -d postgres",
-    "db:stop": "docker compose down",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "prisma db seed",
-    "db:setup": "npm run db:generate && npm run db:push && npm run db:seed",
-    "db:studio": "prisma studio"
+    "qa:ecommerce": "tsx --env-file=.env qa/ecommerce.qa.ts"
   },
   "prisma": {
     "seed": "tsx --env-file=.env prisma/seed.ts"
@@ -44,7 +34,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "prisma": "^6.9.0",

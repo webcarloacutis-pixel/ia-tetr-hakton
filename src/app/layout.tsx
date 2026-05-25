@@ -16,9 +16,9 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "WhatsApp Rionegro | Panel Oficial Inteligente",
+  title: "VoiceCart AI | WhatsApp Voice Commerce",
   description:
-    "Panel administrativo para comunicados, segmentacion, conocimiento y metricas del canal oficial inteligente del Municipio de Rionegro.",
+    "Bot ecommerce por WhatsApp con notas de voz, OpenAI, UltraMsg y ElevenLabs.",
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",

@@ -1,8 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { getAdminProfile } from "@/lib/auth";
-
-export default async function HomePage() {
-  const profile = await getAdminProfile();
-  redirect(profile ? "/dashboard" : "/login");
+export default function HomePage() {
+  redirect("/audio-test");
 }

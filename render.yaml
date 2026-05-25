@@ -1,73 +1,44 @@
 services:
   - type: web
-    name: rionegro-panel-web
+    name: voicecart-ai-web
     runtime: node
     plan: starter
     buildCommand: npm install && npx prisma generate && npm run build
-    preDeployCommand: npx prisma db push
     startCommand: npm run render:start
-    healthCheckPath: /login
+    healthCheckPath: /api/webhook
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: 20
-      - key: DATABASE_URL
-        fromDatabase:
-          name: rionegro-panel-db
-          property: connectionString
-      - key: DIRECT_URL
-        fromDatabase:
-          name: rionegro-panel-db
-          property: connectionString
-      - key: ADMIN_EMAIL
-        value: admin@rionegro.gov
-      - key: ADMIN_PASSWORD
-        sync: false
+      - key: ECOMMERCE_ONLY
+        value: "true"
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
         value: gpt-5-mini
-      - key: ULTRAMSG_API_URL
-        sync: false
+      - key: OPENAI_TRANSCRIPTION_MODEL
+        value: gpt-4o-mini-transcribe
+      - key: ULTRAMSG_INSTANCE_ID
+        value: instance177604
+      - key: ULTRAMSG_BASE_URL
+        value: https://api.ultramsg.com/instance177604
       - key: ULTRAMSG_TOKEN
         sync: false
-      - key: ULTRAMSG_DEFAULT_TO
+      - key: WHATSAPP_SAFE_MODE
+        value: "true"
+      - key: WHATSAPP_AUDIO_REPLIES
+        value: "true"
+      - key: WHATSAPP_SEND_TEXT_WITH_AUDIO
+        value: "false"
+      - key: ELEVENLABS_API_KEY
         sync: false
-
-  - type: worker
-    name: rionegro-panel-scheduler
-    runtime: node
-    plan: starter
-    buildCommand: npm install && npx prisma generate
-    startCommand: npm run render:worker
-    autoDeploy: true
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-      - key: DATABASE_URL
-        fromDatabase:
-          name: rionegro-panel-db
-          property: connectionString
-      - key: DIRECT_URL
-        fromDatabase:
-          name: rionegro-panel-db
-          property: connectionString
-      - key: ADMIN_EMAIL
-        value: admin@rionegro.gov
-      - key: ADMIN_PASSWORD
+      - key: ELEVENLABS_VOICE_ID
         sync: false
-      - key: OPENAI_API_KEY
+      - key: ELEVENLABS_MODEL_ID
+        value: eleven_multilingual_v2
+      - key: ELEVENLABS_OUTPUT_FORMAT
+        value: mp3_44100_128
+      - key: PAYMENT_INSTRUCTIONS
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-5-mini
-      - key: ULTRAMSG_API_URL
-        sync: false
-      - key: ULTRAMSG_TOKEN
-        sync: false
-      - key: ULTRAMSG_DEFAULT_TO
-        sync: false
-
-databases:
-  - name: rionegro-panel-db
-    plan: basic-256mb
-    postgresMajorVersion: "16"
+      - key: PRODUCTS_JSON_PATH
+        value: productos.json

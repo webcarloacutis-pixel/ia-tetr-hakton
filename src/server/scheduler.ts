@@ -7,6 +7,11 @@ const POLL_INTERVAL_MS = 15_000;
 let lastLoggedError = "";
 let lastLoggedAt = 0;
 
+if (process.env.ECOMMERCE_ONLY === "true" || !process.env.DATABASE_URL) {
+  console.log("[scheduler] Disabled in ecommerce-only mode.");
+  process.exit(0);
+}
+
 function normalizeSchedulerError(error: unknown) {
   const message = getErrorMessage(error);
 

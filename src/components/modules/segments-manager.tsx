@@ -252,7 +252,7 @@ export function SegmentsManager({ segments }: SegmentsManagerProps) {
                   setForm((current) => ({ ...current, recipientPhones: event.target.value }))
                 }
                 className="min-h-28"
-                placeholder={"+573108853250\n+573162215323"}
+                placeholder={"+57XXXXXXXXXX\n+57XXXXXXXXXX"}
               />
               <p className="text-xs text-muted">
                 Puedes pegar varios numeros separados por linea, coma o punto y coma.
@@ -380,7 +380,7 @@ export function SegmentsManager({ segments }: SegmentsManagerProps) {
                 value={quickPhones}
                 onChange={(event) => setQuickPhones(event.target.value)}
                 className="min-h-40"
-                placeholder={"+573108853250\n+573162215323\n+573234725938"}
+                placeholder={"+57XXXXXXXXXX\n+57XXXXXXXXXX\n+57XXXXXXXXXX"}
               />
               <p className="text-xs text-muted">
                 Al guardar, el sistema normaliza, elimina duplicados y deja esos numeros listos
