@@ -6,8 +6,8 @@
     "dev": "npm run dev:ecommerce",
     "dev:ecommerce": "next dev -p 3030",
     "build": "next build --webpack",
-    "start": "npm run build && next start -p 3030",
-    "render:start": "next start -p $PORT",
+    "start": "node scripts/start-next.mjs",
+    "render:start": "node scripts/start-next.mjs",
     "lint": "eslint .",
     "db:generate": "prisma generate",
     "qa:ecommerce": "tsx --env-file=.env qa/ecommerce.qa.ts"
